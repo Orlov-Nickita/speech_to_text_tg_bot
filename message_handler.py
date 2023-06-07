@@ -11,11 +11,10 @@ from loader import dp, bot
 
 async def oga2wav(filename: str):
     """
-
+    Конвертация формата файлов
     :param filename:
     :return:
     """
-    # Конвертация формата файлов
     new_filename = filename.replace('.oga', '.wav')
     audio = AudioSegment.from_file(filename)
     audio.export(new_filename, format='wav')
@@ -24,18 +23,20 @@ async def oga2wav(filename: str):
 
 async def recognize_speech(oga_filename: os.path):
     """
-
+    Перевод голоса в текст + удаление использованных файлов
     :param oga_filename:
     :return:
     """
-    # Перевод голоса в текст + удаление использованных файлов
     wav_filename = await oga2wav(oga_filename)
     recognizer = speech_recognition.Recognizer()
     
     with speech_recognition.WavFile(wav_filename) as source:
         wav_audio = recognizer.record(source)
     
-    text = recognizer.recognize_google(wav_audio, language='ru')
+    try:
+        text = recognizer.recognize_google(wav_audio, language='ru')
+    except speech_recognition.exceptions.UnknownValueError:
+        text = "Не удалось распознать текст из-за низкого качества записи или наличия шумов"
     
     if os.path.exists(oga_filename):
         os.remove(oga_filename)
@@ -48,13 +49,11 @@ async def recognize_speech(oga_filename: os.path):
 
 async def download_file(bot: aiogram.Bot, file_id: str):
     """
-
+    Скачивание файла, который прислал пользователь
     :param bot:
     :param file_id:
     :return:
     """
-    # Скачивание файла, который прислал пользователь
-    
     file_info: aiogram.types.File = await bot.get_file(file_id)
     downloaded_file: io.BytesIO = await bot.download_file(file_info.file_path)
     filename: str = file_id + file_info.file_path
@@ -66,12 +65,11 @@ async def download_file(bot: aiogram.Bot, file_id: str):
 
 
 @dp.message_handler(content_types=['voice'])
-async def transcript(message):
+async def transcript(message: Message):
     """
-
+    Функция, отправляющая текст в ответ на голосовое
     :param message:
     """
-    # Функция, отправляющая текст в ответ на голосовое
     filename = await download_file(bot, message.voice.file_id)
     text = await recognize_speech(filename)
     await bot.send_message(message.chat.id, text)

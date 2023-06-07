@@ -2,7 +2,6 @@
 Модуль отвечающий за запуск программы. Пусковой файл
 """
 
-# from loader import dp
 from message_handler import *
 from aiogram.utils import executor
 
